@@ -3,299 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fonksiyon Yolu: Mobil Pro</title>
+    <title>Fonksiyon Labirenti</title>
     <style>
         :root {
-            --bg: #020617;
+            --bg: #0f172a;
             --card: #1e293b;
-            --accent: #818cf8;
-            --success: #10b981;
-            --danger: #f43f5e;
-            --portal: #d946ef;
-            --text: #f8fafc;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --portal: #a855f7;
+            --text: #f1f5f9;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--text); overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
 
-        /* Geri Bildirim */
+        /* Geri Bildirim Animasyonları */
         .flash-success { animation: flashG 0.5s ease-out; }
         .flash-error { animation: flashR 0.5s ease-out, shake 0.4s; }
         @keyframes flashG { 0% { box-shadow: inset 0 0 100px var(--success); } 100% { box-shadow: inset 0 0 0 transparent; } }
         @keyframes flashR { 0% { box-shadow: inset 0 0 100px var(--danger); } 100% { box-shadow: inset 0 0 0 transparent; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 
-        /* Ekranlar */
-        .screen {
-            position: fixed; inset: 0; background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center;
+        .game-container { width: 100vw; height: 100vh; max-width: 800px; display: flex; flex-direction: column; padding: 10px; }
+
+        /* Üst Bilgi Barı */
+        .stats { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px; background: var(--card); border-radius: 12px; margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .screen h1 { font-size: clamp(2rem, 8vw, 3.5rem); font-weight: 900; background: linear-gradient(to right, var(--accent), var(--portal)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
+        .hp-bar { color: var(--success); font-weight: 900; font-size: 1.2rem; }
+        #status { font-weight: bold; color: var(--accent); font-size: 0.9rem; }
 
-        /* Oyun Konteynırı */
-        .game-wrapper { display: none; width: 100vw; height: 100vh; max-width: 900px; padding: 10px; flex-direction: column; }
-        
-        .header { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .stat { display: flex; flex-direction: column; align-items: center; }
-        .stat-label { font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; }
-        .stat-value { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
-
-        #board-container { 
-            position: relative; flex-grow: 1; background: rgba(0,0,0,0.4); 
+        /* Oyun Alanı */
+        #viewport { 
+            position: relative; flex-grow: 1; background: rgba(0,0,0,0.2); 
             border-radius: 15px; overflow-y: auto; overflow-x: hidden; border: 1px solid #334155;
-            display: flex; align-items: flex-start; justify-content: center;
-            padding: 10px;
+            padding: 10px; scroll-behavior: smooth;
+        }
+        #grid { 
+            display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; width: 100%; position: relative; z-index: 10;
         }
 
-        #board-grid { 
-            display: grid; 
-            /* Varsayılan Sütun Sayısı */
-            grid-template-columns: repeat(10, 1fr); 
-            width: 100%; gap: 6px; 
-        }
-
-        /* Mobil Ayarı: 5 Sütun */
+        /* Mobil Grid Ayarı: 5 Sütun ve Kare Kutular */
         @media (max-width: 600px) {
-            #board-grid { grid-template-columns: repeat(5, 1fr); }
-            .cell { font-size: 0.5rem !important; }
+            #grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
         }
 
         .cell {
-            aspect-ratio: 1 / 1; /* Kare Kalmasını Sağlayan Sihir */
+            aspect-ratio: 1 / 1; /* Kutuların kare kalmasını sağlayan kritik kod */
             background: #1e293b; border-radius: 8px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; 
-            color: #64748b; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; 
-            position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            align-items: center; justify-content: center; font-size: 0.65rem; font-weight: bold; 
+            color: #475569; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; position: relative;
         }
-        .cell.active { border-color: var(--accent); background: #334155; transform: scale(1.05); z-index: 10; box-shadow: 0 0 15px var(--accent); }
+        .cell.active { border-color: var(--accent); background: #334155; box-shadow: 0 0 15px var(--accent); z-index: 11; }
         .cell.portal { border-color: var(--portal); color: var(--portal); }
-        .cell.trap { border-color: var(--danger); }
-        .cell.heal { border-color: var(--success); }
+        .cell.trap { border-color: var(--danger); color: var(--danger); }
+        .cell.finish { background: var(--success); color: white; border: none; }
+
+        /* SVG Yol Çizimi */
+        #svg-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        .line { stroke: var(--accent); stroke-width: 2; opacity: 0.2; fill: none; stroke-dasharray: 5; }
 
         #player {
-            width: 24px; height: 24px; background: white; border-radius: 6px;
-            position: absolute; z-index: 100; transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 0 15px var(--accent); border: 2px solid var(--accent);
-            transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; pointer-events: none;
+            width: 22px; height: 22px; background: #fff; border-radius: 4px;
+            position: absolute; z-index: 100; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 15px #fff; border: 2px solid var(--accent);
+            transform: translate(-50%, -50%); pointer-events: none;
         }
 
-        #board-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-
-        .controls { height: 100px; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        /* Kontroller */
+        .controls { height: 90px; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        .dice { width: 50px; height: 50px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; color: #000; }
         .btn {
-            padding: 12px 30px; border-radius: 12px; border: none; background: var(--accent); color: white;
-            font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #4f46e5;
+            padding: 12px 30px; border-radius: 10px; border: none; background: var(--accent); color: #000;
+            font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #0369a1;
         }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4f46e5; }
-        #dice-result { font-size: 2.5rem; font-weight: 900; color: white; min-width: 40px; text-align: center; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0369a1; }
 
         /* Soru Modalı */
-        #q-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98);
-            z-index: 3000; align-items: center; justify-content: center; padding: 20px;
+        #modal {
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95);
+            z-index: 2000; align-items: center; justify-content: center; padding: 20px;
         }
-        .q-card {
-            background: var(--card); padding: 30px; border-radius: 20px; width: 100%; max-width: 400px;
-            border: 2px solid var(--accent); text-align: center;
-        }
-        .q-card input {
-            width: 100%; padding: 12px; margin: 15px 0; background: var(--bg); border: 1px solid #334155;
-            color: white; font-size: 1.5rem; border-radius: 10px; text-align: center;
-        }
+        .q-box { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; border: 2px solid var(--accent); }
+        input { width: 100%; padding: 15px; margin: 20px 0; background: #0f172a; border: 1px solid #334155; color: white; font-size: 1.5rem; border-radius: 8px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen" class="screen">
-        <h1>NEON PATH</h1>
-        <p style="color: #94a3b8; margin-bottom: 20px;">Lise 1 Fonksiyon Düellosu</p>
-        <button class="btn" onclick="game.init()">OYUNA BAŞLA</button>
-    </div>
-
-    <div class="game-wrapper" id="game-ui">
-        <div class="header">
-            <div class="stat"><span class="stat-label">CAN</span><span id="hp" class="stat-value">100</span></div>
-            <div class="stat"><span class="stat-label">DURUM</span><span id="status-msg" class="stat-value" style="font-size: 0.8rem">Zar At!</span></div>
+    <div class="game-container">
+        <div class="stats">
+            <div class="hp-bar">HP: <span id="hp">100</span></div>
+            <div id="status">ZAR AT</div>
+            <div style="font-weight: bold; opacity: 0.6;">KONUM: <span id="pos">0</span></div>
         </div>
 
-        <div id="board-container">
-            <svg id="board-svg">
-                <path id="main-path" fill="none" stroke="rgba(129, 140, 248, 0.15)" stroke-width="3" stroke-dasharray="8,8" />
-            </svg>
-            <div id="board-grid"></div>
-            <div id="player">👾</div>
+        <div id="viewport">
+            <svg id="svg-layer"><path id="path-line" class="line" /></svg>
+            <div id="grid"></div>
+            <div id="player"></div>
         </div>
 
         <div class="controls">
-            <div id="dice-result">?</div>
+            <div id="dice-val" class="dice">?</div>
             <button class="btn" id="roll-btn" onclick="game.roll()">ZAR AT</button>
         </div>
     </div>
 
-    <div id="q-overlay">
-        <div class="q-card">
-            <div id="q-text" style="font-size: 1.4rem; margin-bottom: 15px;"></div>
-            <input type="number" id="q-input" pattern="\d*">
-            <button class="btn" style="width: 100%" onclick="game.submitAnswer()">ONAYLA</button>
+    <div id="modal">
+        <div class="q-box">
+            <div id="q-text" style="font-size: 1.3rem; margin-bottom: 10px; line-height: 1.5;"></div>
+            <input type="number" id="q-input" pattern="\d*" placeholder="Cevap">
+            <button class="btn" style="width: 100%" onclick="game.submit()">ONAYLA</button>
         </div>
     </div>
 
 <script>
     const game = {
-        hp: 100, pos: 0, isMoving: false, cells: [],
-        portals: { 6: 14, 22: 32, 11: 3, 42: 35 }, 
+        hp: 100, pos: 0, moving: false,
+        portals: { 7: 15, 22: 35, 12: 3, 44: 38 },
 
         init() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
-            this.buildBoard();
-            window.addEventListener('resize', () => this.drawPaths());
-        },
-
-        buildBoard() {
-            const grid = document.getElementById('board-grid');
+            const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            this.cells = [];
-
             for(let i=0; i<50; i++) {
-                let type = 'normal', label = '';
+                let type = 'normal', label = i;
                 const r = Math.random();
-                if(i === 0) label = 'GİRİŞ';
-                else if(i === 49) { type = 'finish'; label = 'BİTİŞ'; }
-                else if(this.portals[i]) { type = 'portal'; label = 'PORTAL'; }
-                else if(r < 0.15) { type = 'trap'; label = 'TUZAK'; }
-                else if(r < 0.25) { type = 'heal'; label = 'İKSİR'; }
-                else { type = 'question'; label = 'f(x)'; }
+                if(i===0) label = 'BAŞLA';
+                else if(i===49) { type='finish'; label='BİTİŞ'; }
+                else if(this.portals[i]) { type='portal'; label='P'; }
+                else if(r < 0.15) { type='trap'; label='T'; }
+                else if(r < 0.25) { type='heal'; label='H'; }
+                else { type='question'; label='f(x)'; }
 
-                this.cells.push(type);
                 const div = document.createElement('div');
                 div.className = `cell ${type}`;
                 div.id = `c-${i}`;
-                div.innerHTML = `<span style="opacity:0.3; font-size:0.5rem">${i}</span>${label}`;
+                div.innerHTML = label;
                 grid.appendChild(div);
             }
-            setTimeout(() => { this.drawPaths(); this.update(); }, 200);
+            window.addEventListener('resize', () => this.draw());
+            setTimeout(() => this.draw(), 300);
         },
 
-        getCols() { return window.innerWidth < 600 ? 5 : 10; },
-
-        getCoords(idx) {
+        getXY(idx) {
             const el = document.getElementById(`c-${idx}`);
-            const rect = el.getBoundingClientRect();
-            const cont = document.getElementById('board-container').getBoundingClientRect();
-            return {
-                x: rect.left - cont.left + rect.width / 2,
-                y: rect.top - cont.top + rect.height / 2
-            };
+            const r = el.getBoundingClientRect();
+            const v = document.getElementById('viewport').getBoundingClientRect();
+            return { x: r.left - v.left + r.width/2, y: r.top - v.top + r.height/2 };
         },
 
-        drawPaths() {
-            const mainPath = document.getElementById('main-path');
+        draw() {
+            const path = document.getElementById('path-line');
             let d = "";
-            for(let i=0; i<50; i++) {
-                const c = this.getCoords(i);
-                d += (i===0 ? "M " : "L ") + `${c.x} ${c.y} `;
-            }
-            mainPath.setAttribute("d", d);
+            for(let i=0; i<50; i++) d += (i===0 ? "M " : "L ") + `${this.getXY(i).x} ${this.getXY(i).y} `;
+            path.setAttribute("d", d);
+            this.sync();
         },
 
-        update() {
-            const c = this.getCoords(this.pos);
+        sync() {
+            const c = this.getXY(this.pos);
             const p = document.getElementById('player');
-            p.style.left = c.x + 'px';
-            p.style.top = c.y + 'px';
-            
+            p.style.left = c.x + 'px'; p.style.top = c.y + 'px';
             document.getElementById('hp').innerText = this.hp;
+            document.getElementById('pos').innerText = this.pos;
             document.querySelectorAll('.cell').forEach(el => el.classList.remove('active'));
             document.getElementById(`c-${this.pos}`).classList.add('active');
-            
-            // Mobilde oyuncuyu odakta tutmak için scroll
             document.getElementById(`c-${this.pos}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
         },
 
         async roll() {
-            if(this.isMoving) return;
-            this.isMoving = true;
+            if(this.moving) return;
+            this.moving = true;
             document.getElementById('roll-btn').disabled = true;
-
             const val = Math.floor(Math.random()*6) + 1;
-            const diceEl = document.getElementById('dice-result');
-            
             for(let i=0; i<8; i++) {
-                diceEl.innerText = Math.floor(Math.random()*6)+1;
+                document.getElementById('dice-val').innerText = Math.floor(Math.random()*6)+1;
                 await new Promise(r => setTimeout(r, 60));
             }
-            diceEl.innerText = val;
-
+            document.getElementById('dice-val').innerText = val;
             for(let i=0; i<val; i++) {
-                if(this.pos < 49) {
-                    this.pos++;
-                    this.update();
-                    await new Promise(r => setTimeout(r, 250));
-                }
+                if(this.pos < 49) { this.pos++; this.sync(); await new Promise(r => setTimeout(r, 200)); }
             }
-            this.processCell();
+            this.check();
         },
 
-        processCell() {
-            const type = this.cells[this.pos];
-            if(type === 'finish') { alert("TEBRİKLER!"); location.reload(); }
+        check() {
+            const el = document.getElementById(`c-${this.pos}`).classList;
+            if(el.contains('finish')) { alert("KAZANDIN!"); location.reload(); }
             else if(this.portals[this.pos]) {
                 this.msg("PORTAL!", "var(--portal)");
-                setTimeout(() => { this.pos = this.portals[this.pos]; this.update(); this.endTurn(); }, 600);
-            } else if(type === 'trap') {
-                this.hp -= 15; this.flash('error'); this.msg("-15 CAN", "var(--danger)"); this.endTurn();
-            } else if(type === 'heal') {
-                this.hp = Math.min(100, this.hp + 20); this.flash('success'); this.msg("+20 CAN", "var(--success)"); this.endTurn();
-            } else if(type === 'question') { this.askQuestion(); }
-            else { this.endTurn(); }
+                setTimeout(() => { this.pos = this.portals[this.pos]; this.sync(); this.end(); }, 600);
+            } else if(el.contains('trap')) {
+                this.hp -= 15; this.fx('error'); this.msg("-15 HP", "var(--danger)"); this.end();
+            } else if(el.contains('heal')) {
+                this.hp = Math.min(100, this.hp+20); this.fx('success'); this.msg("+20 HP", "var(--success)"); this.end();
+            } else if(el.contains('question')) { this.ask(); }
+            else this.end();
         },
 
-        askQuestion() {
+        ask() {
             const r = Math.random();
             let q, a;
             if(r < 0.4) {
-                const v = Math.floor(Math.random()*50)+1;
-                q = `f(x) birim fonksiyondur.<br>f(${v}) = ?`; a = v;
+                const v = Math.floor(Math.random()*80)+2;
+                q = `f(x) birim fonksiyondur.<br><b>f(${v}) = ?</b>`; a = v;
             } else if(r < 0.7) {
-                const v = Math.floor(Math.random()*30);
-                q = `f(x) sabit fonksiyondur.<br>f(2)=${v} ise f(100)=?`; a = v;
+                const v = Math.floor(Math.random()*40)+1;
+                q = `f(x) sabit fonksiyondur.<br>f(5)=${v} ise <b>f(2026)=?</b>`; a = v;
             } else {
-                const m = Math.floor(Math.random()*3)+2, n = Math.floor(Math.random()*10), x = Math.floor(Math.random()*5);
-                q = `f(x) = ${m}x + ${n}<br>f(${x}) = ?`; a = m*x+n;
+                const m = Math.floor(Math.random()*4)+2, n = Math.floor(Math.random()*10), x = Math.floor(Math.random()*5);
+                q = `f(x) = ${m}x + ${n}<br><b>f(${x}) = ?</b>`; a = m*x+n;
             }
-            this.currentAns = a;
+            this.ans = a;
             document.getElementById('q-text').innerHTML = q;
             document.getElementById('q-input').value = '';
-            document.getElementById('q-overlay').style.display = 'flex';
+            document.getElementById('modal').style.display = 'flex';
             setTimeout(() => document.getElementById('q-input').focus(), 100);
         },
 
-        submitAnswer() {
+        submit() {
             const val = parseInt(document.getElementById('q-input').value);
-            document.getElementById('q-overlay').style.display = 'none';
-            if(val === this.currentAns) { this.flash('success'); this.msg("DOĞRU!", "var(--success)"); }
-            else { this.hp -= 20; this.flash('error'); this.msg(`YANLIŞ! Cevap: ${this.currentAns}`, "var(--danger)"); }
-            this.endTurn();
+            document.getElementById('modal').style.display = 'none';
+            if(val === this.ans) { this.fx('success'); this.msg("DOĞRU!", "var(--success)"); }
+            else { this.hp -= 20; this.fx('error'); this.msg(`YANLIŞ! Cevap: ${this.ans}`, "var(--danger)"); }
+            this.end();
         },
 
-        flash(type) {
-            document.body.className = type === 'success' ? 'flash-success' : 'flash-error';
+        fx(t) {
+            document.body.className = `flash-${t}`;
             setTimeout(() => document.body.className = '', 500);
         },
 
         msg(t, c) {
-            const m = document.getElementById('status-msg');
+            const m = document.getElementById('status');
             m.innerText = t; m.style.color = c;
         },
 
-        endTurn() {
-            this.update();
-            if(this.hp <= 0) { alert("Canın bitti!"); location.reload(); }
-            this.isMoving = false;
+        end() {
+            this.sync();
+            if(this.hp <= 0) { alert("OYUN BİTTİ!"); location.reload(); }
+            this.moving = false;
             document.getElementById('roll-btn').disabled = false;
         }
     };
+    window.onload = () => game.init();
 </script>
 </body>
 </html>
